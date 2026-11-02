@@ -44,6 +44,7 @@ internal static class MacNative
     [DllImport(ObjC, EntryPoint = "objc_msgSend")] public static extern IntPtr Send(IntPtr receiver, IntPtr selector);
     [DllImport(ObjC, EntryPoint = "objc_msgSend")] public static extern IntPtr Send(IntPtr receiver, IntPtr selector, IntPtr arg);
     [DllImport(ObjC, EntryPoint = "objc_msgSend")] public static extern IntPtr Send(IntPtr receiver, IntPtr selector, ulong arg, IntPtr arg2);
+    [DllImport(ObjC, EntryPoint = "objc_msgSend")] public static extern IntPtr SendIndex(IntPtr receiver, IntPtr selector, ulong index);
     [DllImport(ObjC, EntryPoint = "objc_msgSend")] public static extern void SendVoid(IntPtr receiver, IntPtr selector, [MarshalAs(UnmanagedType.I1)] bool arg);
     [DllImport(ObjC, EntryPoint = "objc_msgSend")] public static extern void SendVoid(IntPtr receiver, IntPtr selector, ulong arg);
     [DllImport(ObjC, EntryPoint = "objc_msgSend")] public static extern long SendLong(IntPtr receiver, IntPtr selector);

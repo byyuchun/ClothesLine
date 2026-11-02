@@ -61,6 +61,11 @@ public class MacOSPlatformAdapter : IPlatformAdapter
         return MacPasteboard.TrySaveImageAsPng(targetPngPath);
     }
 
+    public IReadOnlyList<string> GetClipboardFilePaths()
+    {
+        return MacPasteboard.GetFilePaths();
+    }
+
     public void OpenFile(string filePath)
     {
         if (!File.Exists(filePath)) return;

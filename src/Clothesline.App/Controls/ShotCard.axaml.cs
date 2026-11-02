@@ -26,6 +26,9 @@ public partial class ShotCard : UserControl
     /// <summary>卡片自身给弹簧注入了速度（如单击复制时的晃动），宿主需唤醒动画循环</summary>
     public event EventHandler? MotionKicked;
 
+    /// <summary>卡片开始被拖出（宿主应收起悬停预览，避免预览浮窗挡住拖放目标）</summary>
+    public event EventHandler? DragStarted;
+
     private const int ThumbnailDecodeWidth = 280;
 
     // 每帧复用的变换对象，避免 60fps 下持续分配 TransformGroup/ScaleTransform/RotateTransform
@@ -329,6 +332,7 @@ public partial class ShotCard : UserControl
             {
                 // 原生系统文件拖放 (Drag-Out 联动收纳篮与桌面)
                 CardSurface.Opacity = 0.55;
+                DragStarted?.Invoke(this, EventArgs.Empty);
                 try
                 {
                     var data = new DataObject();
@@ -337,6 +341,11 @@ public partial class ShotCard : UserControl
                     data.Set(Clothesline.App.Services.DragDropHelper.RopeItemIdFormat, Item.Id);
                     data.Set(Clothesline.App.Services.DragDropHelper.CardFilePathFormat, Item.FilePath);
                     await DragDrop.DoDragDrop(e, data, DragDropEffects.Copy | DragDropEffects.Move);
+                }
+                catch (Exception ex)
+                {
+                    // async void 中的异常会终止进程
+                    System.Diagnostics.Trace.WriteLine($"[Clothesline] drag failed: {ex}");
                 }
                 finally
                 {

@@ -24,6 +24,9 @@ public sealed class ClipboardWatcher : IDisposable
 
     public event EventHandler<string>? ImageCaptured;
 
+    /// <summary>用户在资源管理器/访达中复制了文件（仅包含真实存在的文件，不含文件夹）</summary>
+    public event EventHandler<IReadOnlyList<string>>? FilesCaptured;
+
     public ClipboardWatcher()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -50,7 +53,7 @@ public sealed class ClipboardWatcher : IDisposable
             if (currentSeq != _lastSequenceNumber && currentSeq != 0)
             {
                 _lastSequenceNumber = currentSeq;
-                CheckClipboardForImageWindows();
+                OnClipboardChanged();
             }
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -59,8 +62,37 @@ public sealed class ClipboardWatcher : IDisposable
             if (count != _lastMacChangeCount)
             {
                 _lastMacChangeCount = count;
-                SaveClipboardImage();
+                OnClipboardChanged();
             }
+        }
+    }
+
+    /// <summary>
+    /// 剪贴板内容变化：复制的文件优先（访达复制文件时会附带文件图标位图，不能当截屏处理），否则检查位图
+    /// </summary>
+    private void OnClipboardChanged()
+    {
+        try
+        {
+            var files = PlatformProvider.Current.GetClipboardFilePaths().Where(File.Exists).ToList();
+            if (files.Count > 0)
+            {
+                FilesCaptured?.Invoke(this, files);
+                return;
+            }
+        }
+        catch
+        {
+            // 忽略剪贴板争用冲突
+        }
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            CheckClipboardForImageWindows();
+        }
+        else
+        {
+            SaveClipboardImage();
         }
     }
 

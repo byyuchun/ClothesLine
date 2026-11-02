@@ -20,7 +20,8 @@
     </Window.Styles>
 
     <!-- StyleKit 铅笔手绘风（Sketch Style）晾衣收纳库 -->
-    <Border Background="#FAF7F2"
+    <Border Name="RootBorder"
+            Background="#FAF7F2"
             BorderBrush="#1E293B"
             BorderThickness="2"
             CornerRadius="8"

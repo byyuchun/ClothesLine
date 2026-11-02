@@ -75,6 +75,7 @@ public partial class ShelfWindow : Window
         Basket.PointerEntered += (_, _) => WakeAnimation();
         Basket.PointerExited += (_, _) => WakeAnimation();
         _clipboardWatcher.ImageCaptured += OnClipboardImageCaptured;
+        _clipboardWatcher.FilesCaptured += OnClipboardFilesCaptured;
 
         // 晾衣篮点击展开暂存与收纳管理面板
         Basket.Clicked += (_, _) => OpenBasketWindow();
@@ -185,6 +186,55 @@ public partial class ShelfWindow : Window
         });
     }
 
+    /// <summary>
+    /// 用户在资源管理器/访达中复制了文件：自动挂上晾衣绳（与截屏共用「自动挂上绳索」开关）。
+    /// 已在绳上的文件静默忽略——单击卡片复制自身时也会触发剪贴板变化，不能重复挂或弹提示。
+    /// </summary>
+    private void OnClipboardFilesCaptured(object? sender, IReadOnlyList<string> paths)
+    {
+        Dispatcher.UIThread.Post(async () =>
+        {
+            var fresh = paths
+                .Where(p => File.Exists(p) &&
+                            !_cards.Any(c => string.Equals(c.Item.FilePath, p, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+            if (fresh.Count == 0) return;
+
+            if (!AutoHangScreenshots)
+            {
+                foreach (var path in fresh)
+                {
+                    await _stateStore.AddToBasketAsync(RopeItem.FromFile(path));
+                }
+                Basket.Bounce();
+                await RefreshBasketCountAsync();
+                return;
+            }
+
+            // 倒序插入，使复制顺序中的第一个文件最终位于最左侧
+            ShotCard? first = null;
+            for (int i = fresh.Count - 1; i >= 0; i--)
+            {
+                var item = RopeItem.FromFile(fresh[i]);
+                await _stateStore.AddItemAsync(item);
+
+                var card = CreateAndAddCard(item, snap: false);
+                _cards.Remove(card);
+                _cards.Insert(0, card);
+                card.DropMotion.Snap(-60.0);
+                card.DropMotion.Target = 0.0;
+                card.SwingMotion.Snap(12.0);
+                card.SwingMotion.Target = 0.0;
+                first = card;
+            }
+
+            _ropeMotion.Velocity += 16.0;
+            SlideReveal();
+            LayoutCards(snap: false);
+            first?.ShowToast(fresh.Count == 1 ? "复制的文件已挂上" : $"已挂上 {fresh.Count} 个文件");
+        });
+    }
+
     private async Task LoadInitialItemsAsync()
     {
         var items = await _stateStore.LoadAsync();
@@ -208,6 +258,7 @@ public partial class ShelfWindow : Window
         card.Converted += async (_, newFilePath) => await OnCardConvertedAsync(card, newFilePath);
         card.EditImageRequested += (_, editItem) => OpenImageEditor(card, editItem);
         card.MotionKicked += (_, _) => WakeAnimation();
+        card.DragStarted += (_, _) => _previewDispatcher.Dismiss();
         card.PointerEntered += (_, _) => WakeAnimation();
         card.PointerExited += (_, _) => WakeAnimation();
         _previewDispatcher.RegisterCard(card);
@@ -673,11 +724,24 @@ public partial class ShelfWindow : Window
 
     private async void OnShelfDrop(object? sender, DragEventArgs e)
     {
+        // async void 事件处理器中的异常会直接终止进程，这里统一兜底
+        try
+        {
+            await HandleShelfDropAsync(e);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.WriteLine($"[Clothesline] drop failed: {ex}");
+        }
+    }
+
+    private async Task HandleShelfDropAsync(DragEventArgs e)
+    {
         Rope.IsHighlighted = false;
         Basket.IsHighlighted = false;
 
         var paths = DragDropHelper.ExtractFilePaths(e.Data);
-        var cardId = e.Data.Get(DragDropHelper.RopeItemIdFormat) as string;
+        var cardId = DragDropHelper.TryGetCardId(e.Data);
         if (!string.IsNullOrEmpty(cardId))
         {
             var cardById = _cards.FirstOrDefault(c => c.Item.Id == cardId);
@@ -697,34 +761,7 @@ public partial class ShelfWindow : Window
 
         if (dropIntoBasket)
         {
-            // 丝滑移入右侧收纳衣篮：
-            // 若为绳索上已挂载的卡片，从晾衣绳取下并安全存入衣篮；
-            // 若为外部新拖入的文件，直接存入衣篮
-            foreach (var path in paths)
-            {
-                if (!File.Exists(path)) continue;
-
-                var existingCard = _cards.FirstOrDefault(c =>
-                    (!string.IsNullOrEmpty(cardId) && c.Item.Id == cardId) ||
-                    string.Equals(c.Item.FilePath, path, StringComparison.OrdinalIgnoreCase));
-
-                if (existingCard != null)
-                {
-                    _cards.Remove(existingCard);
-                    CardsCanvas.Children.Remove(existingCard);
-                    // 自动解挂并归档至 basket_history.json
-                    await _stateStore.RemoveItemAsync(existingCard.Item.Id);
-                }
-                else
-                {
-                    var item = RopeItem.FromFile(path);
-                    await _stateStore.AddToBasketAsync(item);
-                }
-            }
-
-            LayoutCards(snap: false);
-            Basket.Bounce();
-            await RefreshBasketCountAsync();
+            await StowIntoBasketAsync(paths, cardId);
             e.Handled = true;
             return;
         }
@@ -763,6 +800,63 @@ public partial class ShelfWindow : Window
         e.Handled = true;
     }
 
+    /// <summary>
+    /// 把文件收进晾衣篮：绳上已挂的卡片会被取下（仅解挂，不删源文件），外部文件直接存入。
+    /// 绳上的篮子图标与打开的晾衣篮窗口共用这一入口。
+    /// </summary>
+    public async Task StowIntoBasketAsync(IReadOnlyList<string> paths, string? cardId)
+    {
+        _previewDispatcher.Dismiss();
+
+        foreach (var path in paths)
+        {
+            if (!File.Exists(path)) continue;
+
+            var existingCard = _cards.FirstOrDefault(c =>
+                (!string.IsNullOrEmpty(cardId) && c.Item.Id == cardId) ||
+                string.Equals(c.Item.FilePath, path, StringComparison.OrdinalIgnoreCase));
+
+            if (existingCard != null)
+            {
+                _cards.Remove(existingCard);
+                CardsCanvas.Children.Remove(existingCard);
+                // 自动解挂并归档至 basket_history.json
+                await _stateStore.RemoveItemAsync(existingCard.Item.Id);
+            }
+            else
+            {
+                await _stateStore.AddToBasketAsync(RopeItem.FromFile(path));
+            }
+        }
+
+        LayoutCards(snap: false);
+        Basket.Bounce();
+        await RefreshBasketCountAsync();
+    }
+
+    /// <summary>
+    /// 晾衣篮窗口定位：右边缘对齐绳上的篮子图标、紧挨晾衣绳下方弹出，方便把卡片直接往下拖进去；
+    /// 超出工作区时贴边收回。
+    /// </summary>
+    private PixelPoint ComputeBasketWindowPosition(Window window)
+    {
+        var screen = Screens.Primary;
+        if (screen == null) return new PixelPoint(0, 0);
+
+        double scale = screen.Scaling > 0 ? screen.Scaling : 1.0;
+        var work = screen.WorkingArea;
+        int w = (int)(window.Width * scale);
+        int h = (int)(window.Height * scale);
+
+        double basketRight = Math.Max(0, Width - CaptionSafeMargin - 12.0); // 与 OnAnimTick 中篮子的落点一致
+        int x = screen.Bounds.X + (int)(basketRight * scale) - w;
+        int y = ShelfTopY(screen) + (int)(250 * scale); // 卡片最低垂到约 250 处
+
+        x = Math.Clamp(x, work.X + 8, Math.Max(work.X + 8, work.Right - w - 8));
+        y = Math.Clamp(y, work.Y + 8, Math.Max(work.Y + 8, work.Bottom - h - 8));
+        return new PixelPoint(x, y);
+    }
+
     public void OpenBasketWindow()
     {
         if (_basketWindow == null || !_basketWindow.IsVisible)
@@ -773,7 +867,9 @@ public partial class ShelfWindow : Window
             }, async () =>
             {
                 await RefreshBasketCountAsync();
-            });
+            }, StowIntoBasketAsync);
+            _basketWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+            _basketWindow.Position = ComputeBasketWindowPosition(_basketWindow);
             _basketWindow.Closed += async (_, _) =>
             {
                 _basketWindow = null;

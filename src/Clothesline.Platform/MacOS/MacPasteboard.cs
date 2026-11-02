@@ -78,6 +78,51 @@ internal static class MacPasteboard
         }
     }
 
+    /// <summary>
+    /// 读取访达复制的文件路径（每个 pasteboard item 的 public.file-url）
+    /// </summary>
+    public static IReadOnlyList<string> GetFilePaths()
+    {
+        var result = new List<string>();
+        var pool = objc_autoreleasePoolPush();
+        try
+        {
+            var pb = Send(Class("NSPasteboard"), Sel("generalPasteboard"));
+            if (pb == IntPtr.Zero) return result;
+
+            var items = Send(pb, Sel("pasteboardItems"));
+            if (items == IntPtr.Zero) return result;
+
+            var fileUrlType = NSString("public.file-url");
+            ulong count = SendULong(items, Sel("count"));
+            for (ulong i = 0; i < count; i++)
+            {
+                var item = SendIndex(items, Sel("objectAtIndex:"), i);
+                var urlString = Send(item, Sel("stringForType:"), fileUrlType);
+                if (urlString == IntPtr.Zero) continue;
+
+                var url = Send(Class("NSURL"), Sel("URLWithString:"), urlString);
+                if (url == IntPtr.Zero) continue;
+                // file:///.file/id=... 形式的引用 URL 需先解析为真实路径
+                var resolved = Send(url, Sel("filePathURL"));
+                var path = Send(resolved != IntPtr.Zero ? resolved : url, Sel("path"));
+                if (path == IntPtr.Zero) continue;
+
+                var str = System.Runtime.InteropServices.Marshal.PtrToStringUTF8(Send(path, Sel("UTF8String")));
+                if (!string.IsNullOrEmpty(str)) result.Add(str);
+            }
+        }
+        catch
+        {
+            // 忽略剪贴板读取异常
+        }
+        finally
+        {
+            objc_autoreleasePoolPop(pool);
+        }
+        return result;
+    }
+
     private static bool Contains(IntPtr nsArray, string uti) =>
         SendBool(nsArray, Sel("containsObject:"), NSString(uti));
 }
