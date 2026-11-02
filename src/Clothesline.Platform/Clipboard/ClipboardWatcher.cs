@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Clothesline.Core.Storage;
+using Clothesline.Platform.MacOS;
 using Clothesline.Platform.Windows;
 
 namespace Clothesline.Platform.Clipboard;
@@ -12,6 +13,7 @@ public sealed class ClipboardWatcher : IDisposable
 {
     private readonly Timer? _timer;
     private uint _lastSequenceNumber;
+    private long _lastMacChangeCount;
     private bool _enabled = true;
 
     public bool IsEnabled
@@ -30,6 +32,12 @@ public sealed class ClipboardWatcher : IDisposable
             // 300ms 轻量非阻塞心跳，0% CPU 占用
             _timer = new Timer(OnPollClipboard, null, 1000, 300);
         }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            // NSPasteboard.changeCount 读取开销极低，同样 300ms 轮询
+            _lastMacChangeCount = MacPasteboard.ChangeCount();
+            _timer = new Timer(OnPollClipboard, null, 1000, 300);
+        }
     }
 
     private void OnPollClipboard(object? state)
@@ -45,6 +53,15 @@ public sealed class ClipboardWatcher : IDisposable
                 CheckClipboardForImageWindows();
             }
         }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            long count = MacPasteboard.ChangeCount();
+            if (count != _lastMacChangeCount)
+            {
+                _lastMacChangeCount = count;
+                SaveClipboardImage();
+            }
+        }
     }
 
     private void CheckClipboardForImageWindows()
@@ -58,6 +75,18 @@ public sealed class ClipboardWatcher : IDisposable
                 return;
             }
 
+            SaveClipboardImage();
+        }
+        catch
+        {
+            // 忽略剪贴板争用冲突
+        }
+    }
+
+    private void SaveClipboardImage()
+    {
+        try
+        {
             // 如果包含位图，暂存至临时文件并触发挂绳
             AppPaths.EnsureDirectories();
             var fileName = $"Capture_{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}.png";

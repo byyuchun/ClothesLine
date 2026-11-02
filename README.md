@@ -62,6 +62,15 @@ dotnet run --project src/Clothesline.App/Clothesline.App.csproj
 dotnet publish src/Clothesline.App/Clothesline.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o release/win-x64
 ```
 
+### macOS 说明
+- 晾衣绳挂在菜单栏下方；鼠标碰触屏幕顶端中段或拖拽文件靠近顶端即可唤出。
+- 以菜单栏工具形式运行，不显示 Dock 图标，通过菜单栏托盘图标打开/退出。
+- 窗口出现在所有桌面（Space）上；全屏应用所在 Space 中不会出现，天然避让全屏。
+- 截屏到剪贴板（如 `Ctrl+Shift+Cmd+4`）会自动挂上晾衣绳；访达中复制文件不会被误判为截屏。
+- 视频提取音频：安装 `ffmpeg`（`brew install ffmpeg`）后支持全部格式；未安装时仅支持 MP4/MOV/M4V 提取 WAV。
+- Office 转 PDF 使用内置 OpenXML 引擎（Windows 上的 Office COM 无损导出不可用）。
+- 点击卡片会激活 Clothesline 应用（macOS 下无法像 Windows 那样完全不抢焦点）。
+
 ---
 
 ## 交互指南

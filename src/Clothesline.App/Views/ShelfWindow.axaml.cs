@@ -396,12 +396,19 @@ public partial class ShelfWindow : Window
         }
     }
 
+    /// <summary>
+    /// 晾衣绳悬挂的顶端 Y：macOS 挂在菜单栏下方（菜单栏层级高于浮动窗口，会遮住绳子）；
+    /// 菜单栏自动隐藏时 WorkingArea.Y 与屏幕顶端重合。Windows 直接贴屏幕顶端。
+    /// </summary>
+    private static int ShelfTopY(Avalonia.Platform.Screen screen) =>
+        OperatingSystem.IsMacOS() ? screen.WorkingArea.Y : screen.Bounds.Y;
+
     public void SlideReveal()
     {
         var screen = Screens.Primary;
         if (screen != null)
         {
-            Position = new PixelPoint(screen.Bounds.X, screen.Bounds.Y);
+            Position = new PixelPoint(screen.Bounds.X, ShelfTopY(screen));
         }
 
         _isRevealed = true;
@@ -444,7 +451,7 @@ public partial class ShelfWindow : Window
 
             // 收起时移至物理屏幕上方 -450px 处，彻底杜绝任何露边或阻挡底层窗口
             int posX = bounds.X;
-            int posY = moveToOffscreen ? bounds.Y - 450 : bounds.Y;
+            int posY = moveToOffscreen ? bounds.Y - 450 : ShelfTopY(screen);
 
             Position = new PixelPoint(posX, posY);
             Width = dipWidth;
@@ -524,6 +531,7 @@ public partial class ShelfWindow : Window
         if (screen == null) return;
 
         var bounds = screen.Bounds;
+        int shelfTop = ShelfTopY(screen);
         var hwnd = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
 
         // ★ 核心防线 1：系统控制区避让 (Caption Buttons Safe Zone)
@@ -556,7 +564,7 @@ public partial class ShelfWindow : Window
 
         // ★ 核心交互 1：拖拽感知唤醒 (Drag Sensing to Wake)
         // 用户拖拽文件向屏幕上方靠拢时灵敏滑下迎客 (避开右上角系统控制区)
-        bool canDragWake = isDragging && cursor.Y >= bounds.Y && cursor.Y <= bounds.Y + 70 &&
+        bool canDragWake = isDragging && cursor.Y >= bounds.Y && cursor.Y <= shelfTop + 70 &&
                            cursor.X >= bounds.X && cursor.X <= bounds.X + bounds.Width - rightSafeZonePx;
 
         if (canDragWake && !_isRevealed)
@@ -590,7 +598,7 @@ public partial class ShelfWindow : Window
         if (_isRevealed)
         {
             bool insideShelf = cursor.X >= bounds.X && cursor.X < bounds.X + bounds.Width - rightSafeZonePx &&
-                               cursor.Y >= bounds.Y && cursor.Y < bounds.Y + 280;
+                               cursor.Y >= bounds.Y && cursor.Y < shelfTop + 280;
             // 若用户正在操作收纳篮管理窗口，保持晾衣绳不被自动收回
             if (!insideShelf && (_basketWindow == null || !_basketWindow.IsVisible))
             {
