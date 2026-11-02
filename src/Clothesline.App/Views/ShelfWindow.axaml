@@ -1,0 +1,54 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:Clothesline.App.Controls"
+        x:Class="Clothesline.App.Views.ShelfWindow"
+        Title="Clothesline Shelf"
+        Height="280"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        CanResize="False"
+        DragDrop.AllowDrop="True">
+
+    <Grid Name="MainGrid" ClipToBounds="True" DragDrop.AllowDrop="True">
+        <!-- 整体滑出动效容器 (由 SpringMotion revealMotion 驱动平移) -->
+        <Canvas Name="RootContainer" Height="280" HorizontalAlignment="Stretch" VerticalAlignment="Top" ClipToBounds="True" DragDrop.AllowDrop="True">
+            <!-- StyleKit 铅笔手绘风物理拟物贝塞尔晾衣绳 -->
+            <controls:RopeLine Name="Rope" Canvas.Top="0" Canvas.Left="0" Height="60" HorizontalAlignment="Stretch" />
+
+            <!-- 空白状态手撕便签提示语 (当没有卡片挂载时展示) -->
+            <Border Name="EmptyHintBorder"
+                    Canvas.Top="60"
+                    Background="#FFFDF9"
+                    BorderBrush="#1E293B"
+                    BorderThickness="1.5"
+                    BoxShadow="2.5 2.5 0 0 #1E293B"
+                    CornerRadius="4"
+                    Padding="16,6"
+                    IsHitTestVisible="False">
+                <TextBlock Name="EmptyHintText"
+                           Text="拖入任意文件挂上晾衣绳 · 右键卡片即刻格式转换与草图批注"
+                           FontSize="12"
+                           FontWeight="Bold"
+                           Foreground="#1E293B" />
+            </Border>
+
+            <!-- 水平滚动可视区域 -->
+            <ScrollViewer Name="CardsScrollViewer"
+                          Canvas.Top="0"
+                          Canvas.Left="0"
+                          Height="280"
+                          HorizontalScrollBarVisibility="Hidden"
+                          VerticalScrollBarVisibility="Disabled"
+                          ClipToBounds="True"
+                          DragDrop.AllowDrop="True">
+                <Canvas Name="CardsCanvas" Height="280" Width="1920" ClipToBounds="True" DragDrop.AllowDrop="True" />
+            </ScrollViewer>
+
+            <!-- 绳索右侧拟物晾衣篮（天然藤编素描质感，拖入直接收纳，点击展开暂存与收纳库） -->
+            <controls:RopeBasket Name="Basket" Canvas.Top="0" Canvas.Left="0" DragDrop.AllowDrop="True" />
+        </Canvas>
+    </Grid>
+</Window>

@@ -1,0 +1,292 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Clothesline.App.Views.BasketWindow"
+        Title="晾衣篮 · Clothesline"
+        Width="880"
+        Height="580"
+        MinWidth="720"
+        MinHeight="450"
+        WindowStartupLocation="CenterScreen"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        Topmost="True">
+
+    <Window.Styles>
+        <Style Selector="Button">
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+    </Window.Styles>
+
+    <!-- StyleKit 铅笔手绘风（Sketch Style）晾衣收纳库 -->
+    <Border Background="#FAF7F2"
+            BorderBrush="#1E293B"
+            BorderThickness="2"
+            CornerRadius="8"
+            BoxShadow="6 6 0 0 #1E293B"
+            ClipToBounds="True">
+        <Grid RowDefinitions="54,*,58">
+            <!-- 顶部素描标题栏（支持拖拽移动窗口） -->
+            <Border Name="HeaderBar"
+                    Grid.Row="0"
+                    Background="#F5EFEB"
+                    BorderBrush="#1E293B"
+                    BorderThickness="0,0,0,1.8"
+                    Padding="20,0,16,0">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
+                        <TextBlock Text="晾衣篮" FontSize="16" FontWeight="Bold" Foreground="#1E293B" VerticalAlignment="Center" />
+                        <Border Background="#FFFDF9"
+                                BorderBrush="#1E293B"
+                                BorderThickness="1.2"
+                                CornerRadius="4"
+                                BoxShadow="1.5 1.5 0 0 #1E293B"
+                                Padding="8,2"
+                                VerticalAlignment="Center"
+                                Margin="6,0,0,0">
+                            <TextBlock Name="SubtitleText"
+                                       Text="暂存与收纳库 · 随时重新晾上"
+                                       FontSize="11.5"
+                                       FontWeight="SemiBold"
+                                       Foreground="#475569" />
+                        </Border>
+                    </StackPanel>
+
+                    <Button Name="CloseButton"
+                            Grid.Column="1"
+                            Content="✕"
+                            FontSize="14"
+                            FontWeight="Bold"
+                            Foreground="#1E293B"
+                            Background="#FFFDF9"
+                            BorderBrush="#1E293B"
+                            BorderThickness="1.5"
+                            CornerRadius="4"
+                            Width="32"
+                            Height="32"
+                            Cursor="Hand"
+                            VerticalContentAlignment="Center"
+                            HorizontalContentAlignment="Center" />
+                </Grid>
+            </Border>
+
+            <!-- 主内容区域：左侧素描列表，右侧素描详情 -->
+            <Grid Grid.Row="1" ColumnDefinitions="*,310">
+                <!-- 左侧收纳列表 -->
+                <Grid Grid.Column="0" RowDefinitions="36,*" Margin="16,12,10,12">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                        <TextBlock Name="CountHeader"
+                                   Text="暂存文件 (0 项)"
+                                   FontSize="13.5"
+                                   FontWeight="Bold"
+                                   Foreground="#1E293B"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="1"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto"
+                                  Margin="0,8,0,0">
+                        <StackPanel Name="ItemsPanel" Spacing="8" />
+                    </ScrollViewer>
+
+                    <!-- 空状态提示 -->
+                    <Border Name="EmptyContainer"
+                            Grid.Row="1"
+                            IsVisible="False"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center">
+                        <Border Background="#FFFDF9"
+                                BorderBrush="#1E293B"
+                                BorderThickness="1.5"
+                                BoxShadow="3 3 0 0 #1E293B"
+                                CornerRadius="6"
+                                Padding="24,18">
+                            <StackPanel HorizontalAlignment="Center" Spacing="8">
+                                <TextBlock Text="晾衣篮暂无文件"
+                                           FontSize="15"
+                                           FontWeight="Bold"
+                                           Foreground="#1E293B"
+                                           HorizontalAlignment="Center" />
+                                <TextBlock Text="从晾衣绳取下的文件会安全暂存在这里&#x0a;绝不删除您的本地源文件"
+                                           FontSize="12"
+                                           Foreground="#64748B"
+                                           TextAlignment="Center"
+                                           HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                    </Border>
+                </Grid>
+
+                <!-- 中间分割线与右侧素描详情面板 -->
+                <Border Grid.Column="1"
+                        Background="#F5EFEB"
+                        BorderBrush="#1E293B"
+                        BorderThickness="1.8,0,0,0"
+                        Padding="16,14">
+                    <Grid RowDefinitions="*,Auto">
+                        <!-- 右侧详情与预览 -->
+                        <ScrollViewer Grid.Row="0">
+                            <StackPanel Name="DetailPanel" Spacing="14">
+                                <Border Background="#FFFDF9"
+                                        BorderBrush="#1E293B"
+                                        BorderThickness="1.5"
+                                        BoxShadow="2.5 2.5 0 0 #1E293B"
+                                        CornerRadius="6"
+                                        Height="150"
+                                        ClipToBounds="True">
+                                    <Grid>
+                                        <Image Name="PreviewImage"
+                                               Stretch="Uniform"
+                                               Margin="8"
+                                               IsVisible="False" />
+                                        <TextBlock Name="PreviewIcon"
+                                                   Text="文件"
+                                                   FontSize="18"
+                                                   FontWeight="Bold"
+                                                   Foreground="#64748B"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+
+                                <StackPanel Spacing="4">
+                                    <TextBlock Name="DetailFileName"
+                                               Text="未选择文件"
+                                               FontSize="15"
+                                               FontWeight="Bold"
+                                               Foreground="#1E293B"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock Name="DetailFileSize"
+                                               Text="-"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               Foreground="#64748B" />
+                                </StackPanel>
+
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="源文件路径" FontSize="11" FontWeight="Bold" Foreground="#475569" />
+                                    <TextBlock Name="DetailFilePath"
+                                               Text="-"
+                                               FontSize="11"
+                                               Foreground="#64748B"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <!-- 右侧素描操作按钮组 -->
+                        <StackPanel Grid.Row="1" Spacing="8" Margin="0,12,0,0">
+                            <Button Name="RehangButton"
+                                    Content="重新晾上"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Center"
+                                    Height="36"
+                                    Background="#1E293B"
+                                    BorderBrush="#1E293B"
+                                    BorderThickness="1.5"
+                                    Foreground="#FFFDF9"
+                                    FontWeight="Bold"
+                                    CornerRadius="6"
+                                    Cursor="Hand" />
+
+                            <Grid ColumnDefinitions="*,*">
+                                <Button Name="LocateButton"
+                                        Grid.Column="0"
+                                        Content="定位"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center"
+                                        Height="32"
+                                        Background="#FFFDF9"
+                                        BorderBrush="#1E293B"
+                                        BorderThickness="1.5"
+                                        Foreground="#1E293B"
+                                        FontWeight="SemiBold"
+                                        CornerRadius="6"
+                                        Margin="0,0,4,0"
+                                        Cursor="Hand" />
+
+                                <Button Name="OpenButton"
+                                        Grid.Column="1"
+                                        Content="打开"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
+                                        Height="32"
+                                        Background="#FFFDF9"
+                                        BorderBrush="#1E293B"
+                                        BorderThickness="1.5"
+                                        Foreground="#1E293B"
+                                        FontWeight="SemiBold"
+                                        CornerRadius="6"
+                                        Margin="4,0,0,0"
+                                        Cursor="Hand" />
+                            </Grid>
+
+                            <Button Name="DeleteFromBasketButton"
+                                    Content="移出衣篮"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalContentAlignment="Center"
+                                    Height="32"
+                                    Background="#FFFDF9"
+                                    Foreground="#64748B"
+                                    BorderBrush="#1E293B"
+                                    BorderThickness="1.5"
+                                    CornerRadius="6"
+                                    Cursor="Hand" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- 底部素描工具栏 -->
+            <Border Grid.Row="2"
+                    Background="#F5EFEB"
+                    BorderBrush="#1E293B"
+                    BorderThickness="0,1.8,0,0"
+                    Padding="20,0">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Button Name="ClearBasketButton"
+                            Grid.Column="0"
+                            Content="清空衣篮"
+                            Height="32"
+                            Background="#FFFDF9"
+                            BorderBrush="#1E293B"
+                            BorderThickness="1.5"
+                            Foreground="#1E293B"
+                            FontWeight="SemiBold"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            CornerRadius="6"
+                            Cursor="Hand"
+                            VerticalAlignment="Center" />
+
+                    <TextBlock Grid.Column="1"
+                               Text="提示：清空衣篮仅清除索引记录，电脑中源文件完好无损"
+                               FontSize="11.5"
+                               FontWeight="SemiBold"
+                               Foreground="#64748B"
+                               VerticalAlignment="Center"
+                               Margin="16,0,0,0" />
+
+                    <Button Name="BottomCloseButton"
+                            Grid.Column="2"
+                            Content="关闭"
+                            Height="32"
+                            Width="80"
+                            Background="#1E293B"
+                            BorderBrush="#1E293B"
+                            BorderThickness="1.5"
+                            Foreground="#FFFDF9"
+                            FontWeight="Bold"
+                            CornerRadius="6"
+                            Cursor="Hand"
+                            HorizontalContentAlignment="Center"
+                            VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

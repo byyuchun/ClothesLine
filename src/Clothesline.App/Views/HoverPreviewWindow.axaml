@@ -1,0 +1,80 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Clothesline.App.Views.HoverPreviewWindow"
+        Title="Hover Preview"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        CanResize="False"
+        SizeToContent="WidthAndHeight"
+        MaxWidth="560" MaxHeight="480">
+
+    <Border Name="WindowCard"
+            Background="#FFFFFF"
+            CornerRadius="12"
+            BoxShadow="0 16 38 0 #55000000"
+            BorderBrush="#E2E8F0"
+            BorderThickness="1"
+            Margin="16"
+            Padding="14">
+
+        <StackPanel Spacing="10">
+            <!-- 顶部标题与元数据栏 -->
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Name="TitleText"
+                               FontSize="13.5"
+                               FontWeight="Bold"
+                               Foreground="#0F172A"
+                               TextTrimming="CharacterEllipsis"
+                               MaxWidth="420" />
+                    <TextBlock Name="MetaText"
+                               FontSize="11"
+                               Foreground="#64748B" />
+                </StackPanel>
+            </Grid>
+
+            <!-- 1. 图片预览视窗 -->
+            <Border Name="ImageContainer"
+                    CornerRadius="8"
+                    ClipToBounds="True"
+                    Background="#F1F5F9"
+                    MaxHeight="320"
+                    IsVisible="False">
+                <Image Name="PreviewImage" Stretch="Uniform" />
+            </Border>
+
+            <!-- 2. 文本 / Markdown / 代码视窗 (等宽黑色极客视窗) -->
+            <Border Name="TextContainer"
+                    CornerRadius="8"
+                    Background="#1E1E2E"
+                    Padding="12,10"
+                    MaxHeight="260"
+                    IsVisible="False">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <TextBlock Name="CodeText"
+                               FontFamily="Consolas,Menlo,Monospace,Segoe UI Mono"
+                               FontSize="11"
+                               Foreground="#CDD6F4"
+                               LineHeight="16" />
+                </ScrollViewer>
+            </Border>
+
+            <!-- 3. 通用文档详情信息栏 -->
+            <Border Name="DetailsContainer"
+                    CornerRadius="8"
+                    Background="#F8FAFC"
+                    BorderBrush="#E2E8F0"
+                    BorderThickness="1"
+                    Padding="12,8"
+                    IsVisible="False">
+                <TextBlock Name="DetailsText"
+                           FontSize="11.5"
+                           Foreground="#334155"
+                           LineHeight="18" />
+            </Border>
+        </StackPanel>
+    </Border>
+</Window>

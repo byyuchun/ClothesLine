@@ -1,0 +1,223 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Clothesline.App.Views.ImageEditorWindow"
+        Title="图片素描草图编辑与批注 · Clothesline"
+        Width="1100"
+        Height="760"
+        MinWidth="880"
+        MinHeight="620"
+        WindowStartupLocation="CenterScreen"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        RequestedThemeVariant="Light"
+        Topmost="True">
+
+    <Window.Styles>
+        <!-- 强约束工具栏单选按钮（永远深石墨色 #1E293B，彻底解决系统 Dark 模式下字色和圆圈变白的问题） -->
+        <Style Selector="RadioButton">
+            <Setter Property="Foreground" Value="#1E293B" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="RadioButton /template/ Ellipse#OuterEllipse">
+            <Setter Property="Stroke" Value="#1E293B" />
+            <Setter Property="StrokeThickness" Value="1.5" />
+        </Style>
+        <Style Selector="RadioButton:checked /template/ Ellipse#CheckOuterEllipse">
+            <Setter Property="Stroke" Value="#1E293B" />
+            <Setter Property="Fill" Value="#1E293B" />
+        </Style>
+        <Style Selector="RadioButton:checked /template/ Ellipse#CheckGlyph">
+            <Setter Property="Fill" Value="#FFFDF9" />
+        </Style>
+
+        <!-- 强约束所有按钮内容严格几何水平与垂直居中，杜绝文字偏顶偏底 -->
+        <Style Selector="Button">
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+    </Window.Styles>
+
+    <!-- StyleKit 铅笔手绘风（Sketch Style）绘图桌主外框 -->
+    <Border Background="#FAF7F2"
+            BorderBrush="#1E293B"
+            BorderThickness="2"
+            CornerRadius="8"
+            BoxShadow="6 6 0 0 #1E293B"
+            ClipToBounds="True">
+        <Grid RowDefinitions="58,*,60">
+            <!-- 顶部素描工具栏（支持窗口拖拽 + 素描工具切换） -->
+            <Border Name="HeaderBar"
+                    Grid.Row="0"
+                    Background="#F5EFEB"
+                    BorderBrush="#1E293B"
+                    BorderThickness="0,0,0,1.8"
+                    Padding="16,0">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <!-- 左侧草图标题 & 分辨率标牌 -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                        <TextBlock Text="草图批注与标注" FontSize="15" FontWeight="Bold" Foreground="#1E293B" VerticalAlignment="Center" />
+                        <Border Background="#FFFDF9"
+                                BorderBrush="#1E293B"
+                                BorderThickness="1.2"
+                                CornerRadius="4"
+                                BoxShadow="1.5 1.5 0 0 #1E293B"
+                                Padding="6,2"
+                                VerticalAlignment="Center"
+                                Margin="4,0,0,0">
+                            <TextBlock Name="DimensionText" Text="1920 × 1080" FontSize="11" FontWeight="SemiBold" Foreground="#475569" VerticalAlignment="Center" />
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 中间素描工具组：方框、箭头、画笔、马赛克、文字、颜色选择器、缩放 -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
+                        <RadioButton Name="ToolRect" Content="方框" GroupName="Tools" IsChecked="True" Height="30" VerticalAlignment="Center" />
+                        <RadioButton Name="ToolArrow" Content="箭头" GroupName="Tools" Height="30" VerticalAlignment="Center" />
+                        <RadioButton Name="ToolPen" Content="画笔" GroupName="Tools" Height="30" VerticalAlignment="Center" />
+                        <RadioButton Name="ToolMosaic" Content="马赛克" GroupName="Tools" Height="30" VerticalAlignment="Center" />
+                        <RadioButton Name="ToolText" Content="文字" GroupName="Tools" Height="30" VerticalAlignment="Center" />
+
+                        <Border Width="1.5" Height="22" Background="#1E293B" Margin="6,0" VerticalAlignment="Center" />
+
+                        <!-- 手绘色盘预设 (红、蓝、黄、绿、黑) -->
+                        <Button Name="ColorRed" Width="22" Height="22" CornerRadius="11" Background="#E11D48" BorderBrush="#1E293B" BorderThickness="1.5" Padding="0" Margin="2,0" Cursor="Hand" VerticalAlignment="Center" />
+                        <Button Name="ColorBlue" Width="22" Height="22" CornerRadius="11" Background="#2563EB" BorderBrush="#1E293B" BorderThickness="1.5" Padding="0" Margin="2,0" Cursor="Hand" VerticalAlignment="Center" />
+                        <Button Name="ColorYellow" Width="22" Height="22" CornerRadius="11" Background="#EAB308" BorderBrush="#1E293B" BorderThickness="1.5" Padding="0" Margin="2,0" Cursor="Hand" VerticalAlignment="Center" />
+                        <Button Name="ColorGreen" Width="22" Height="22" CornerRadius="11" Background="#059669" BorderBrush="#1E293B" BorderThickness="1.5" Padding="0" Margin="2,0" Cursor="Hand" VerticalAlignment="Center" />
+                        <Button Name="ColorBlack" Width="22" Height="22" CornerRadius="11" Background="#1E293B" BorderBrush="#1E293B" BorderThickness="1.5" Padding="0" Margin="2,0" Cursor="Hand" VerticalAlignment="Center" />
+
+                        <Border Width="1.5" Height="22" Background="#1E293B" Margin="6,0" VerticalAlignment="Center" />
+
+                        <!-- 视图草图缩放控制器 -->
+                        <Button Name="ZoomOutBtn" Content="-" Width="28" Height="28" Background="#FFFDF9" BorderBrush="#1E293B" BorderThickness="1.5" Foreground="#1E293B" FontWeight="Bold" CornerRadius="4" Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Cursor="Hand" VerticalAlignment="Center" />
+                        <TextBlock Name="ZoomText" Text="100%" FontSize="11.5" FontWeight="Bold" Foreground="#1E293B" Width="42" TextAlignment="Center" VerticalAlignment="Center" />
+                        <Button Name="ZoomInBtn" Content="+" Width="28" Height="28" Background="#FFFDF9" BorderBrush="#1E293B" BorderThickness="1.5" Foreground="#1E293B" FontWeight="Bold" CornerRadius="4" Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Cursor="Hand" VerticalAlignment="Center" />
+                        <Button Name="ZoomFitBtn" Content="适应" Height="28" Background="#FFFDF9" BorderBrush="#1E293B" BorderThickness="1.5" Foreground="#1E293B" FontWeight="Bold" CornerRadius="4" Padding="8,0" FontSize="11.5" Cursor="Hand" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" VerticalAlignment="Center" Margin="2,0,0,0" />
+
+                        <Border Width="1.5" Height="22" Background="#1E293B" Margin="6,0" VerticalAlignment="Center" />
+
+                        <!-- 撤销与清空 -->
+                        <Button Name="UndoButton" Content="撤销" Height="28" Padding="10,0" Background="#FFFDF9" BorderBrush="#1E293B" BorderThickness="1.5" Foreground="#1E293B" FontWeight="Bold" CornerRadius="4" FontSize="11.5" Cursor="Hand" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" VerticalAlignment="Center" />
+                        <Button Name="ClearButton" Content="清空" Height="28" Padding="10,0" Background="#FFFDF9" BorderBrush="#1E293B" BorderThickness="1.5" Foreground="#1E293B" FontWeight="Bold" CornerRadius="4" FontSize="11.5" Cursor="Hand" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- 右侧关闭按钮 -->
+                    <Button Name="CloseButton"
+                            Grid.Column="2"
+                            Content="✕"
+                            FontSize="14"
+                            FontWeight="Bold"
+                            Foreground="#1E293B"
+                            Background="#FFFDF9"
+                            BorderBrush="#1E293B"
+                            BorderThickness="1.5"
+                            CornerRadius="4"
+                            Width="32"
+                            Height="32"
+                            Cursor="Hand"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center" />
+                </Grid>
+            </Border>
+
+            <!-- 中间主绘图视窗：深色高对比绘图桌背景 (#0F172A)，确保白色底图、浅色图纸边界分明 -->
+            <Border Grid.Row="1" Background="#0F172A" ClipToBounds="True">
+                <ScrollViewer Name="ImageScrollViewer" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <!-- 画纸外层高对比阴影与手绘边框 -->
+                    <Border Name="CanvasPaperBorder"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Background="#FFFDF9"
+                            BorderBrush="#1E293B"
+                            BorderThickness="1.8"
+                            BoxShadow="0 10 32 0 #80000000"
+                            Margin="40"
+                            ClipToBounds="False">
+                        <Grid Name="CanvasContainer" ClipToBounds="True">
+                            <!-- 底图展示层 -->
+                            <Image Name="MainCanvasImage" Stretch="Fill" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <!-- 绘制实时预览手势层 -->
+                            <Canvas Name="OverlayCanvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False" />
+                            <!-- 就地打字悬浮输入层 -->
+                            <Canvas Name="TextInputOverlay" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="True" />
+                        </Grid>
+                    </Border>
+                </ScrollViewer>
+            </Border>
+
+            <!-- 底部素描操作栏 -->
+            <Border Grid.Row="2"
+                    Background="#F5EFEB"
+                    BorderBrush="#1E293B"
+                    BorderThickness="0,1.8,0,0"
+                    Padding="18,0">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                    <!-- 左侧图片分辨率等比缩放按钮组 -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Spacing="6">
+                        <TextBlock Text="分辨率缩放:" FontSize="11.5" FontWeight="Bold" Foreground="#1E293B" VerticalAlignment="Center" />
+                        <Button Name="Scale50Btn" Content="50%" Height="26" Padding="8,0" FontSize="11" Background="#FFFDF9" BorderBrush="#1E293B" BorderThickness="1.2" Foreground="#1E293B" FontWeight="Bold" CornerRadius="4" Cursor="Hand" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" VerticalAlignment="Center" />
+                        <Button Name="Scale75Btn" Content="75%" Height="26" Padding="8,0" FontSize="11" Background="#FFFDF9" BorderBrush="#1E293B" BorderThickness="1.2" Foreground="#1E293B" FontWeight="Bold" CornerRadius="4" Cursor="Hand" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" VerticalAlignment="Center" />
+                        <Button Name="Scale150Btn" Content="150%" Height="26" Padding="8,0" FontSize="11" Background="#FFFDF9" BorderBrush="#1E293B" BorderThickness="1.2" Foreground="#1E293B" FontWeight="Bold" CornerRadius="4" Cursor="Hand" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" VerticalAlignment="Center" />
+                        <Button Name="Scale200Btn" Content="200%" Height="26" Padding="8,0" FontSize="11" Background="#FFFDF9" BorderBrush="#1E293B" BorderThickness="1.2" Foreground="#1E293B" FontWeight="Bold" CornerRadius="4" Cursor="Hand" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- 中间素描手撕便签提示条 -->
+                    <Border Grid.Column="1"
+                            Background="#FFFDF9"
+                            BorderBrush="#1E293B"
+                            BorderThickness="1.2"
+                            CornerRadius="4"
+                            BoxShadow="1.5 1.5 0 0 #1E293B"
+                            Padding="12,4"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                        <TextBlock Name="StatusInfoText"
+                                   Text="选择文字工具后在图上点击即可就地打字 · Enter确认 · 滚轮缩放画布 · Ctrl+Z撤销"
+                                   FontSize="11.5"
+                                   FontWeight="Bold"
+                                   Foreground="#1E293B"
+                                   VerticalAlignment="Center" />
+                    </Border>
+
+                    <!-- 右侧手绘草图风格操作按键 -->
+                    <Button Name="SaveOverwriteButton"
+                            Grid.Column="2"
+                            Content="保存并覆盖"
+                            Height="34"
+                            Padding="16,0"
+                            Background="#FFFDF9"
+                            BorderBrush="#1E293B"
+                            BorderThickness="1.5"
+                            Foreground="#1E293B"
+                            FontSize="12"
+                            FontWeight="Bold"
+                            CornerRadius="6"
+                            Cursor="Hand"
+                            Margin="0,0,12,0"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            VerticalAlignment="Center" />
+
+                    <Button Name="SaveAsNewButton"
+                            Grid.Column="3"
+                            Content="另存为新卡片并挂绳"
+                            Height="34"
+                            Padding="18,0"
+                            Background="#1E293B"
+                            BorderBrush="#1E293B"
+                            BorderThickness="1.5"
+                            Foreground="#FFFDF9"
+                            FontSize="12"
+                            FontWeight="Bold"
+                            CornerRadius="6"
+                            Cursor="Hand"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

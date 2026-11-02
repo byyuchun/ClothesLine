@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Clothesline.Core</RootNamespace>
+    <AssemblyName>Clothesline.Core</AssemblyName>
+  </PropertyGroup>
+</Project>

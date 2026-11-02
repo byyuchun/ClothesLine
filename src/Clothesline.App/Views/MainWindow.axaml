@@ -1,0 +1,20 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Clothesline.App.Views.MainWindow"
+        Title="Clothesline"
+        Width="600" Height="200"
+        WindowStartupLocation="CenterScreen">
+    <Grid Background="#1E1E2E">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+            <TextBlock Text="Clothesline"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Foreground="#FFFFFF"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="跨平台桌面暂存晾衣绳与格式转换工作台 · Phase 1 已就绪"
+                       FontSize="14"
+                       Foreground="#A6ADC8"
+                       HorizontalAlignment="Center" />
+        </StackPanel>
+    </Grid>
+</Window>

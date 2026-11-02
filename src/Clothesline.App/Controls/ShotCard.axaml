@@ -1,0 +1,209 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Clothesline.App.Controls"
+             x:Class="Clothesline.App.Controls.ShotCard"
+             Width="148" Height="176"
+             ClipToBounds="False">
+
+    <UserControl.Styles>
+        <Style Selector="Button#UnhookButton">
+            <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+            <Setter Property="Background" Value="#FFFDF9" />
+            <Setter Property="BorderBrush" Value="#1E293B" />
+            <Setter Property="BorderThickness" Value="1.5" />
+            <Setter Property="Foreground" Value="#1E293B" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button#UnhookButton /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#FFFDF9" />
+            <Setter Property="BorderBrush" Value="#1E293B" />
+            <Setter Property="BorderThickness" Value="1.5" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Foreground" Value="#1E293B" />
+        </Style>
+        <!-- 悬停时：保持高对比度原色绝不反色或变淡，仅呈现轻微放大灵动反馈 -->
+        <Style Selector="Button#UnhookButton:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.15)" />
+            <Setter Property="Background" Value="#FFFDF9" />
+            <Setter Property="BorderBrush" Value="#1E293B" />
+            <Setter Property="Foreground" Value="#1E293B" />
+        </Style>
+        <Style Selector="Button#UnhookButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#FFFDF9" />
+            <Setter Property="BorderBrush" Value="#1E293B" />
+            <Setter Property="BorderThickness" Value="1.5" />
+            <Setter Property="Foreground" Value="#1E293B" />
+        </Style>
+        <Style Selector="Button#UnhookButton:pointerover TextBlock">
+            <Setter Property="Foreground" Value="#1E293B" />
+        </Style>
+        <Style Selector="Button#UnhookButton:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.95)" />
+            <Setter Property="Background" Value="#F5EFEB" />
+            <Setter Property="BorderBrush" Value="#1E293B" />
+            <Setter Property="Foreground" Value="#1E293B" />
+        </Style>
+        <Style Selector="Button#UnhookButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#F5EFEB" />
+            <Setter Property="BorderBrush" Value="#1E293B" />
+            <Setter Property="BorderThickness" Value="1.5" />
+            <Setter Property="Foreground" Value="#1E293B" />
+        </Style>
+        <Style Selector="Button#UnhookButton:pressed TextBlock">
+            <Setter Property="Foreground" Value="#1E293B" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid ClipToBounds="False">
+        <!-- StyleKit 铅笔手绘风（Sketch Style）拍立得相纸实体 -->
+        <Border Name="CardSurface"
+                Width="140" Height="164"
+                Background="#FFFDF9"
+                CornerRadius="6"
+                BorderBrush="#1E293B"
+                BorderThickness="1.8"
+                BoxShadow="3.5 3.5 0 0 #1E293B"
+                ClipToBounds="False">
+
+            <Grid RowDefinitions="*,Auto" Margin="6" ClipToBounds="False">
+                <!-- 顶部视窗：图片缩略图 或 素描图纸文件类型图标 -->
+                <Grid Grid.Row="0" Margin="0,8,0,4">
+                    <!-- 图片模式 -->
+                    <Border Name="ImageFrame"
+                            CornerRadius="4"
+                            ClipToBounds="True"
+                            Background="#F5EFEB"
+                            BorderBrush="#1E293B"
+                            BorderThickness="1.2"
+                            IsVisible="False">
+                        <Image Name="ThumbnailImage" Stretch="UniformToFill" />
+                    </Border>
+
+                    <!-- 通用图纸吊牌模式 -->
+                    <Border Name="DocFrame"
+                            CornerRadius="4"
+                            Background="#FAF7F2"
+                            BorderBrush="#1E293B"
+                            BorderThickness="1.2"
+                            IsVisible="True">
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="6">
+                            <!-- 格式矢量素描印章外框 -->
+                            <Border Width="46" Height="46"
+                                    CornerRadius="6"
+                                    Background="#FFFDF9"
+                                    BorderBrush="#1E293B"
+                                    BorderThickness="1.5"
+                                    BoxShadow="1.5 1.5 0 0 #1E293B"
+                                    HorizontalAlignment="Center">
+                                <TextBlock Name="DocIconSymbol"
+                                           Text="DOC"
+                                           FontSize="13.5"
+                                           FontWeight="Bold"
+                                           Foreground="#1E293B"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                            </Border>
+                            <TextBlock Name="FileNameText"
+                                       FontSize="11.5"
+                                       FontWeight="Bold"
+                                       Foreground="#1E293B"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxWidth="116"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- 底部信息栏：文件大小 + 右下角手绘风格格式胶囊徽章 -->
+                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="2,3,2,0" VerticalAlignment="Center">
+                    <TextBlock Name="FileSizeText"
+                               Grid.Column="0"
+                               FontSize="10.5"
+                               FontWeight="SemiBold"
+                               Foreground="#64748B"
+                               VerticalAlignment="Center" />
+
+                    <!-- 右下角素描印章格式胶囊徽章 -->
+                    <Border Name="BadgeBorder"
+                            Grid.Column="1"
+                            CornerRadius="4"
+                            BorderBrush="#1E293B"
+                            BorderThickness="1.2"
+                            BoxShadow="1.5 1.5 0 0 #1E293B"
+                            Padding="5,1.5"
+                            VerticalAlignment="Center">
+                        <TextBlock Name="BadgeText"
+                                   FontSize="10"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                    </Border>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- 左上角悬浮解挂叉号 (素描手撕标风格) -->
+        <Button Name="UnhookButton"
+                Width="24" Height="24"
+                CornerRadius="12"
+                Background="#FFFDF9"
+                BorderBrush="#1E293B"
+                BorderThickness="1.5"
+                Foreground="#1E293B"
+                Padding="0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Margin="-4,-4,0,0"
+                Opacity="0"
+                IsHitTestVisible="False"
+                Cursor="Hand">
+            <TextBlock Text="✕" FontSize="11" FontWeight="Bold" Foreground="#1E293B" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Button>
+
+        <!-- 顶部正中物理手绘木夹子 (夹住卡片并咬合绳索) -->
+        <controls:ClothesClip Name="TopClip"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Top"
+                               Margin="0,-16,0,0" />
+
+        <!-- 单击复制成功手绘便签提示 -->
+        <Border Name="CopiedToast"
+                Background="#FFFDF9"
+                BorderBrush="#1E293B"
+                BorderThickness="1.5"
+                BoxShadow="2 2 0 0 #1E293B"
+                CornerRadius="4"
+                Padding="10,3"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Bottom"
+                Margin="0,0,0,-18"
+                IsVisible="False"
+                IsHitTestVisible="False">
+            <TextBlock Text="已复制到剪贴板" FontSize="11" FontWeight="Bold" Foreground="#059669" />
+        </Border>
+
+        <!-- 格式转换中素描硫酸纸微光蒙层 -->
+        <Border Name="ConvertingOverlay"
+                Width="140" Height="164"
+                Background="#EEFAF7F2"
+                BorderBrush="#1E293B"
+                BorderThickness="1.8"
+                CornerRadius="6"
+                IsVisible="False"
+                IsHitTestVisible="True">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+                <controls:CircularProgress Name="ConvertProgressRing" Width="44" Height="44" />
+                <TextBlock Name="ConvertPercentText"
+                           Text="转换中..."
+                           FontSize="11.5"
+                           FontWeight="Bold"
+                           Foreground="#1E293B"
+                           HorizontalAlignment="Center" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
