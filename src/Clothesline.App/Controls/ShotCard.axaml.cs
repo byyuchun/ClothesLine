@@ -192,12 +192,16 @@ public partial class ShotCard : UserControl
         var copyItem = new MenuItem { Header = "复制文件" };
         copyItem.Click += (_, _) => CopyFileToClipboard();
 
+        var copyPathItem = new MenuItem { Header = "复制文件路径" };
+        copyPathItem.Click += async (_, _) => await CopyPathToClipboardAsync();
+
         var saveCopyItem = new MenuItem { Header = "保存副本 (另存为)..." };
         saveCopyItem.Click += async (_, _) => await SaveCopyAsAsync();
 
         menu.Items.Add(locateItem);
         menu.Items.Add(openItem);
         menu.Items.Add(copyItem);
+        menu.Items.Add(copyPathItem);
         menu.Items.Add(saveCopyItem);
 
         menu.Items.Add(new Separator());
@@ -279,6 +283,14 @@ public partial class ShotCard : UserControl
                 ShowToast("副本已保存");
             }
         }
+    }
+
+    private async Task CopyPathToClipboardAsync()
+    {
+        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+        if (clipboard == null) return;
+        await clipboard.SetTextAsync(Item.FilePath);
+        ShowToast("路径已复制");
     }
 
     private void CopyFileToClipboard()

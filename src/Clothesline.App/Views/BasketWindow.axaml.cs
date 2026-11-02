@@ -47,6 +47,12 @@ public partial class BasketWindow : Window
         BottomCloseButton.Click += (_, _) => Close();
 
         RehangButton.Click += OnRehangClicked;
+        CopyPathButton.Click += async (_, _) =>
+        {
+            if (_selectedItem == null) return;
+            await CopyPathAsync(_selectedItem);
+            FlashButton(CopyPathButton, "已复制 ✓", "复制路径");
+        };
         LocateButton.Click += OnLocateClicked;
         OpenButton.Click += OnOpenClicked;
         DeleteFromBasketButton.Click += OnDeleteClicked;
@@ -245,6 +251,7 @@ public partial class BasketWindow : Window
         rowGrid.Children.Add(hangBtn);
 
         rowBorder.Child = rowGrid;
+        rowBorder.ContextMenu = BuildRowMenu(item);
 
         rowBorder.PointerEntered += (_, _) =>
         {
@@ -268,6 +275,44 @@ public partial class BasketWindow : Window
         };
 
         return rowBorder;
+    }
+
+    private async Task CopyPathAsync(RopeItem item)
+    {
+        if (Clipboard != null)
+        {
+            await Clipboard.SetTextAsync(item.FilePath);
+        }
+    }
+
+    private static void FlashButton(Button button, string flashText, string normalText)
+    {
+        button.Content = flashText;
+        Avalonia.Threading.DispatcherTimer.RunOnce(() => button.Content = normalText, TimeSpan.FromSeconds(1.2));
+    }
+
+    private ContextMenu BuildRowMenu(RopeItem item)
+    {
+        var menu = new ContextMenu();
+
+        var copyPath = new MenuItem { Header = "复制文件路径" };
+        copyPath.Click += async (_, _) => await CopyPathAsync(item);
+        var copyFile = new MenuItem { Header = "复制文件" };
+        copyFile.Click += (_, _) => PlatformProvider.Current.CopyFilesToClipboard([item.FilePath]);
+        var rehang = new MenuItem { Header = "重新晾上" };
+        rehang.Click += async (_, _) => await RehangItemAsync(item);
+        var locate = new MenuItem { Header = "在文件夹中定位" };
+        locate.Click += (_, _) => PlatformProvider.Current.LocateInFileManager(item.FilePath);
+        var open = new MenuItem { Header = "打开文件" };
+        open.Click += (_, _) => PlatformProvider.Current.OpenFile(item.FilePath);
+
+        menu.Items.Add(copyPath);
+        menu.Items.Add(copyFile);
+        menu.Items.Add(new Separator());
+        menu.Items.Add(rehang);
+        menu.Items.Add(locate);
+        menu.Items.Add(open);
+        return menu;
     }
 
     private void SelectRow(RopeItem item)
@@ -300,6 +345,7 @@ public partial class BasketWindow : Window
             DetailFileName.Text = "未选择文件";
             DetailFileSize.Text = "-";
             DetailFilePath.Text = "-";
+            CopyPathButton.IsEnabled = false;
             PreviewImage.IsVisible = false;
             PreviewIcon.Text = "文件";
             PreviewIcon.IsVisible = true;
@@ -313,6 +359,7 @@ public partial class BasketWindow : Window
         DetailFileName.Text = item.FileName;
         DetailFileSize.Text = $"{item.FormattedFileSize} · {item.Badge.Text}";
         DetailFilePath.Text = item.FilePath;
+        CopyPathButton.IsEnabled = true;
 
         RehangButton.IsEnabled = true;
         LocateButton.IsEnabled = true;
