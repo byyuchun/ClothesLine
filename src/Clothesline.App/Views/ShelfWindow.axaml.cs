@@ -28,6 +28,7 @@ public partial class ShelfWindow : Window
     private readonly DispatcherTimer _animTimer = new() { Interval = TimeSpan.FromMilliseconds(16) };
     private readonly DispatcherTimer _edgeTimer = new() { Interval = TimeSpan.FromMilliseconds(30) };
     private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
+    private readonly TranslateTransform _revealTransform = new();
     private double _lastTimeSeconds;
 
     private DateTime? _edgeSince;
@@ -64,6 +65,15 @@ public partial class ShelfWindow : Window
         AddHandler(DragDrop.DropEvent, OnShelfDrop, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
 
         PointerWheelChanged += OnPointerWheelChanged;
+
+        // 动画循环在所有弹簧静止后会自动停摆；任何指针交互都会将其唤醒
+        RootContainer.RenderTransform = _revealTransform;
+        AddHandler(PointerMovedEvent, OnAnyPointerActivity, RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(PointerPressedEvent, OnAnyPointerActivity, RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(PointerReleasedEvent, OnAnyPointerActivity, RoutingStrategies.Tunnel, handledEventsToo: true);
+        PointerExited += (_, _) => WakeAnimation();
+        Basket.PointerEntered += (_, _) => WakeAnimation();
+        Basket.PointerExited += (_, _) => WakeAnimation();
         _clipboardWatcher.ImageCaptured += OnClipboardImageCaptured;
 
         // 晾衣篮点击展开暂存与收纳管理面板
@@ -99,8 +109,20 @@ public partial class ShelfWindow : Window
         await LoadInitialItemsAsync();
         await RefreshBasketCountAsync();
 
-        _animTimer.Start();
+        WakeAnimation();
         _edgeTimer.Start();
+    }
+
+    private void OnAnyPointerActivity(object? sender, PointerEventArgs e) => WakeAnimation();
+
+    /// <summary>
+    /// 唤醒 60fps 物理动画循环。循环在全部弹簧静止后自行停止，避免空闲时持续占用 CPU 与渲染。
+    /// </summary>
+    private void WakeAnimation()
+    {
+        if (_animTimer.IsEnabled) return;
+        _lastTimeSeconds = _stopwatch.Elapsed.TotalSeconds;
+        _animTimer.Start();
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
@@ -185,7 +207,11 @@ public partial class ShelfWindow : Window
         card.ConvertRequested += (_, convertItem) => OnCardConvertRequested(card, convertItem);
         card.Converted += async (_, newFilePath) => await OnCardConvertedAsync(card, newFilePath);
         card.EditImageRequested += (_, editItem) => OpenImageEditor(card, editItem);
+        card.MotionKicked += (_, _) => WakeAnimation();
+        card.PointerEntered += (_, _) => WakeAnimation();
+        card.PointerExited += (_, _) => WakeAnimation();
         _previewDispatcher.RegisterCard(card);
+        WakeAnimation();
 
         _cards.Add(card);
         CardsCanvas.Children.Add(card);
@@ -268,6 +294,7 @@ public partial class ShelfWindow : Window
         card.SwingMotion.Target = 18.0;
 
         _ropeMotion.Velocity -= 10.0;
+        WakeAnimation();
 
         // 等待轻快的飞跃动画 (200ms)
         await Task.Delay(200);
@@ -294,6 +321,7 @@ public partial class ShelfWindow : Window
         card.ScaleMotion.Target = 0.1;
         card.DropMotion.Target = 60.0;
         _ropeMotion.Velocity -= 8.0;
+        WakeAnimation();
 
         await Task.Delay(180);
 
@@ -352,6 +380,7 @@ public partial class ShelfWindow : Window
 
         CardsCanvas.Width = Math.Max(Width, totalWidth + 80.0);
         _ropeMotion.Target = 18.0 + Math.Min(8, _cards.Count) * 1.5;
+        WakeAnimation();
 
         for (int i = 0; i < _cards.Count; i++)
         {
@@ -377,6 +406,7 @@ public partial class ShelfWindow : Window
 
         _isRevealed = true;
         _revealMotion.Target = RevealedY;
+        WakeAnimation();
         _edgeSince = null;
         _awaySince = null;
 
@@ -389,6 +419,7 @@ public partial class ShelfWindow : Window
         _previewDispatcher.Dismiss();
         _isRevealed = false;
         _revealMotion.Target = HiddenY;
+        WakeAnimation();
         _edgeSince = null;
         _awaySince = null;
 
@@ -438,22 +469,28 @@ public partial class ShelfWindow : Window
         _ropeMotion.Step(dt);
         _scrollMotion.Step(dt);
 
-        RootContainer.RenderTransform = new TranslateTransform(0, _revealMotion.Position);
+        _revealTransform.Y = _revealMotion.Position;
         Rope.Sag = _ropeMotion.Position;
 
-        CardsScrollViewer.Offset = new Vector(_scrollMotion.Position, 0);
+        var scrollOffset = new Vector(_scrollMotion.Position, 0);
+        if (CardsScrollViewer.Offset != scrollOffset)
+        {
+            CardsScrollViewer.Offset = scrollOffset;
+        }
 
         if (EmptyHintBorder.Bounds.Width > 0 && Width > 0)
         {
             Canvas.SetLeft(EmptyHintBorder, (Width - CaptionSafeMargin - EmptyHintBorder.Bounds.Width) / 2.0);
         }
 
+        bool allSettled = _revealMotion.Settled && _ropeMotion.Settled && _scrollMotion.Settled;
+
         double ropeWidth = Rope.Bounds.Width > 0 ? Rope.Bounds.Width : Width;
         foreach (var card in _cards)
         {
             double anchorX = card.XMotion.Position + 74.0;
             double ropeY = Rope.GetRopeYAt(anchorX, ropeWidth);
-            card.StepPhysics(dt, ropeY);
+            allSettled &= card.StepPhysics(dt, ropeY);
         }
 
         // 拟物收纳篮常驻悬挂于绳索右端（避开右上角窗口控制区，随绳索弧度物理起伏）
@@ -461,7 +498,7 @@ public partial class ShelfWindow : Window
         double basketRopeY = Rope.GetRopeYAt(basketX + Basket.Width / 2.0, ropeWidth);
         Canvas.SetLeft(Basket, basketX);
         Canvas.SetTop(Basket, basketRopeY);
-        Basket.StepPhysics(dt);
+        allSettled &= Basket.StepPhysics(dt);
 
         // 当收起动作彻底完成且已沉淀在上方时，将窗体移到屏幕物理范围之外 (确保 100% 毫无露边)
         if (!_isRevealed && _revealMotion.Position <= -310.0)
@@ -471,6 +508,12 @@ public partial class ShelfWindow : Window
             {
                 Position = new PixelPoint(screen.Bounds.X, screen.Bounds.Y - 450);
             }
+        }
+
+        // 全部静止：停掉动画循环，直到下一次交互/状态变化再唤醒
+        if (allSettled)
+        {
+            _animTimer.Stop();
         }
     }
 
@@ -570,6 +613,7 @@ public partial class ShelfWindow : Window
         double maxScroll = Math.Max(0, CardsCanvas.Width - Width);
         double target = Math.Clamp(_scrollMotion.Target - e.Delta.Y * 120.0, 0, maxScroll);
         _scrollMotion.Target = target;
+        WakeAnimation();
         e.Handled = true;
     }
 
@@ -592,10 +636,12 @@ public partial class ShelfWindow : Window
     {
         Rope.IsHighlighted = false;
         Basket.IsHighlighted = false;
+        WakeAnimation();
     }
 
     private void UpdateDragVisuals(DragEventArgs e)
     {
+        WakeAnimation();
         // 以收纳篮控件为基准进行 2D 磁吸范围判断 (外扩 35px 宽，25-40px 高)
         var basketPt = e.GetPosition(Basket);
         double bWidth = Basket.Bounds.Width > 0 ? Basket.Bounds.Width : Basket.Width;
@@ -786,5 +832,6 @@ public partial class ShelfWindow : Window
     {
         var basketItems = await _stateStore.LoadBasketAsync();
         Basket.ItemCount = basketItems.Count;
+        WakeAnimation();
     }
 }
